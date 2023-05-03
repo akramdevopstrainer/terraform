@@ -1,0 +1,60 @@
+# Define the provider, which in this case is AWS
+provider "aws" {
+  region = "us-west-2"
+}
+
+# Create a new VPC (Virtual Private Cloud)
+resource "aws_vpc" "my_vpc" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "my-vpc"
+  }
+}
+
+# Create a new subnet within the VPC
+resource "aws_subnet" "my_subnet" {
+  vpc_id = aws_vpc.my_vpc.id
+  cidr_block = "10.0.1.0/24"
+  tags = {
+    Name = "my-subnet"
+  }
+}
+
+# Create a new security group to control incoming/outgoing traffic
+resource "aws_security_group" "my_security_group" {
+  name_prefix = "my-security-group-"
+  vpc_id = aws_vpc.my_vpc.id
+
+  # Allow all inbound traffic on port 22 (SSH) and 80 (HTTP)
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow all outbound traffic
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Launch a new EC2 instance within the subnet, using the previously created security group
+resource "aws_instance" "my_ec2_instance" {
+  ami = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+  subnet_id = aws_subnet.my_subnet.id
+  vpc_security_group_ids = [aws_security_group.my_security_group.id]
+  tags = {
+    Name = "my-ec2-instance"
+  }
+}
