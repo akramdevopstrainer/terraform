@@ -56,7 +56,6 @@ vi main.tf
 
 2. Add the following Terraform code to the `main.tf` file:
 
-```hcl
 # main.tf
 
 provider "aws" {
@@ -74,13 +73,71 @@ resource "aws_vpc" "my_vpc" {
 resource "aws_subnet" "public_subnet" {
   vpc_id            = aws_vpc.my_vpc.id
   cidr_block        = "10.0.0.0/24"
-  availability_zone = ""  # Leave it empty to let AWS choose automatically
   map_public_ip_on_launch = true
   tags = {
     Name = "public-subnet"
   }
 }
-```
+
+resource "aws_security_group" "nginx_sg" {
+  name        = "nginx-sg"
+  description = "Security group for Nginx"
+  vpc_id      = aws_vpc.my_vpc.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "my_ec2" {
+  ami           = "ami-006935d9a6773e4ec"  # Replace with your desired AMI ID
+  instance_type = "t2.micro"  # Use default instance type
+
+  subnet_id                  = aws_subnet.public_subnet.id
+  key_name                   = "devopsjune"  # Replace with the name of your key pair
+  vpc_security_group_ids     = [aws_security_group.nginx_sg.id]
+  associate_public_ip_address = true
+
+  tags = {
+    Name = "my-ec2-instance"
+  }
+}
+
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.my_igw.id
+  }
+
+  tags = {
+    Name = "public-route-table"
+  }
+}
+
+resource "aws_internet_gateway" "my_igw" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  tags = {
+    Name = "my-internet-gateway"
+  }
+}
+
+resource "aws_route_table_association" "public_subnet_association" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_route_table.id
+}
 
 3. Initialize the Terraform configuration by running:
 
