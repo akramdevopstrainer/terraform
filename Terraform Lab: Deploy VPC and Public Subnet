@@ -1,0 +1,129 @@
+**Terraform Lab: Deploy VPC and Public Subnet**
+
+📚 **Lab Session:**
+
+In this lab session, we will walk through the steps to deploy a VPC and a public subnet on AWS using Terraform. We will cover the installation of Terraform on an AWS EC2 instance, setting up AWS CLI, configuring an IAM user for access keys, validating the connection setup, deploying the infrastructure-as-code (IaC), and finally, deleting the VPC.
+
+**Step 1: Install Terraform on AWS EC2 Instance**
+
+1. Launch an AWS EC2 instance with Amazon Linux.
+2. Connect to the EC2 instance using SSH.
+3. Run the following commands:
+
+```shell
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo yum -y install terraform
+terraform --version
+```
+
+**Step 2: Setup AWS CLI and Authenticate**
+
+1. Install AWS CLI by running the command:
+
+```shell
+sudo yum install -y aws-cli
+```
+
+2. Configure AWS CLI by running the command:
+
+```shell
+aws configure
+```
+
+3. Enter your AWS Access Key ID, Secret Access Key, default region name, and output format when prompted.
+4. Validate the connection setup by running the command:
+
+```shell
+aws sts get-caller-identity
+```
+
+**Step 3: List EC2 Instances as a Table**
+
+Run the command below to list EC2 instances in a table format:
+
+```shell
+aws ec2 describe-instances --query 'Reservations[].Instances[].{Name: Tags[?Key==`Name`].Value | [0], InstanceId: InstanceId, State: State.Name, Type: InstanceType, PrivateIP: PrivateIpAddress}' --output table
+```
+
+**Step 4: Deploy Infrastructure-as-Code (IaC) - VPC using Terraform**
+
+1. Create a `main.tf` file with the desired VPC configuration using the `vi` editor:
+
+```shell
+vi main.tf
+```
+
+2. Add the following Terraform code to the `main.tf` file:
+
+```hcl
+# main.tf
+
+provider "aws" {
+  region = "ap-south-1"  # Replace with your desired AWS region
+}
+
+resource "aws_vpc" "my_vpc" {
+  cidr_block       = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  tags = {
+    Name = "md-devops-trf-vpc"
+  }
+}
+
+resource "aws_subnet" "public_subnet" {
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = "10.0.0.0/24"
+  availability_zone = ""  # Leave it empty to let AWS choose automatically
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "public-subnet"
+  }
+}
+```
+
+3. Initialize the Terraform configuration by running:
+
+```shell
+terraform init
+```
+
+4. Validate the Terraform configuration by running:
+
+```shell
+terraform validate
+```
+
+5. Preview the execution plan by running:
+
+```shell
+terraform plan
+```
+
+6. Deploy the infrastructure by running:
+
+```shell
+terraform apply
+```
+
+**Step 5: Deleting the VPC**
+
+To delete the VPC and associated resources created by Terraform, follow these steps:
+
+1. Change to the directory containing the Terraform configuration:
+
+```shell
+cd trf-project1
+```
+
+2. Run the following command to destroy the resources:
+
+```shell
+terraform destroy
+```
+
+3. Confirm the destruction by typing "yes" when prompted.
+
+🎉 **Congratulations!** You have successfully completed the Terraform lab, which covered the installation of Terraform, AWS CLI setup, 
+IAM user configuration, validating the connection setup, deploying the VPC using Terraform, and deleting the VPC resources. 
+You can now explore further with Terraform and AWS to build more complex infrastructure-as-code deployments.
